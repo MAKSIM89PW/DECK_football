@@ -44,17 +44,19 @@ extension PlayersAPI: TargetType {
     var sampleData: Data {
         switch self {
         case .getPlayers:
-            return (try? JSONEncoder().encode(MockData.playersModel)) ?? Data()
+            return (try? JSONEncoder().encode(PlayersModel(players: MockData.players))) ?? Data()
         case let .deletePlayer(id):
-            return (try? JSONEncoder().encode(MockData.playersModel.players.first { $0.id == id })) ?? Data()
+            if let index = MockData.players.firstIndex(where: { $0.id == id }) {
+                return (try? JSONEncoder().encode(MockData.players.remove(at: index))) ?? Data()
+            }
+            return Data()
         }
         
     }
 }
 
-final class MockData {
-    static let playersModel = PlayersModel(
-        players: [
+private final class MockData {
+    static var players: [PlayersModel.Player] = [
             .init(id: "1", name: "Vasya", surname: "Petrov"),
             .init(id: "2", name: "Petya", surname: "Ivanov"),
             .init(id: "3", name: "Mik", surname: "Petrov"),
@@ -67,6 +69,4 @@ final class MockData {
             .init(id: "10", name: "Lad", surname: "Petrov"),
             .init(id: "11", name: "Gleb", surname: "Petrov"),
         ]
-    )
 }
-
