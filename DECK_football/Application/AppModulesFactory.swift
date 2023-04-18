@@ -11,6 +11,9 @@ import RxSwift
 //1 
 final class AppModulesFactory {
     static func makePlayersListModule() -> PlayersListViewController {
-        PlayersListViewController()
+        let playersService = PlayersService()
+        let viewModel = PlayersListViewModel(service: playersService)
+        return PlayersListViewController(viewModel: viewModel)
     }
 }
+

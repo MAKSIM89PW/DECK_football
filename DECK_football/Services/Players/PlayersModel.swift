@@ -6,3 +6,21 @@
 //
 
 import Foundation
+
+struct PlayersModel: Codable {
+    struct Player: Codable {
+        let id: String
+        let name: String
+        let surname: String
+        
+        var fullName: String {
+            "\(name) \(surname)"
+        }
+    }
+    let players: [Player]
+}
+
+extension PlayersModel.Player {
+    static let empty = Self(id: "", name: "", surname: "")
+}
+
