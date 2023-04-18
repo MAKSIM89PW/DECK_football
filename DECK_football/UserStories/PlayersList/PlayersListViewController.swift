@@ -19,10 +19,9 @@ final class PlayersListViewController: UIViewController {
     
     private let tableView = UITableView()
     private let updateButton = UIButton(type: .system)
+    private let disposeBag = DisposeBag()
     private let activityIndicator = UIActivityIndicatorView(style: .large)
     
-    private let disposeBag = DisposeBag()
-   
     // MARK: - Init`s
     
     init(viewModel: PlayersListViewModel) {
@@ -34,7 +33,8 @@ final class PlayersListViewController: UIViewController {
         fatalError("init(coder:) has not been implemented")
         
     }
-
+    
+    // MARK: - Life cycle
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -42,18 +42,19 @@ final class PlayersListViewController: UIViewController {
         setupBindings()
     }
     
+    // MARK: - Private Methods
     
     private func setupUI() {
         view.backgroundColor = .systemBackground
-        setupTableView()
-        setupUpdateButton()
-        setupActivityIndicator()
+        configureTableView()
+        configureUpdateButton()
+        configureActivityIndicator()
     }
     
-    private func setupTableView() {
+    private func configureTableView() {
         view.addSubview(tableView)
         tableView.allowsSelection = false
-        tableView.delaysContentTouches = false // кнопка в ячейке
+        tableView.delaysContentTouches = false
         tableView.register(PlayerCell.self, forCellReuseIdentifier: .reuseIdentifier)
         tableView.translatesAutoresizingMaskIntoConstraints = false
         
@@ -63,10 +64,10 @@ final class PlayersListViewController: UIViewController {
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -50)
         ])
+        
     }
     
-    private func setupUpdateButton() {
-        
+    private func configureUpdateButton() {
         view.addSubview(updateButton)
         updateButton.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
@@ -79,22 +80,28 @@ final class PlayersListViewController: UIViewController {
         
         updateButton.setTitle("update", for: .normal)
         updateButton.configuration = .filled()
-        
     }
     
-    private func setupActivityIndicator() {
+    private func configureActivityIndicator() {
         view.addSubview(activityIndicator)
         activityIndicator.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+
         ])
     }
     
     private func setupBindings() {
         let deleteButtonClicked = PublishSubject<String?>()
+        let updateSubject = PublishSubject<Void>()
+        
+        updateButton.rx.tap
+            .bind(to: updateSubject)
+            .disposed(by: disposeBag)
+        
         let input = PlayersListViewModel.Input(
-            updated: updateButton.rx.tap.asDriver(),
+            updated: updateSubject.asDriver(onErrorJustReturn: ()),
             deleted: deleteButtonClicked.asDriver(onErrorJustReturn: nil)
         )
         let output = viewModel.transform(input: input)
@@ -122,25 +129,21 @@ final class PlayersListViewController: UIViewController {
                 )
             }.disposed(by: disposeBag)
         
-        output.removedPlayer.drive { [weak self]  model in
-            self?.presentAlert(
-                with: "success",
-                and: "удаление прошло успешно " + model.name
-            )
+        output.removedPlayer.drive { model in
+            updateSubject.onNext(())
         }.disposed(by: disposeBag)
-
     }
     
+
     func presentAlert(with title: String, and message: String) {
         let controller = UIAlertController(title: title, message: message, preferredStyle: .alert)
         controller.addAction(UIAlertAction(title: "ok", style: .default, handler: nil))
         present(controller, animated: true)
     }
-    
 }
 
-// MARK: - Constants
 
+// MARK: - Constants
 private extension String {
     static let reuseIdentifier = "PlayerCell"
 }
